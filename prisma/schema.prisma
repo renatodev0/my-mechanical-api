@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -36,66 +30,82 @@ enum Specialty {
 
 // User entity for user authentication
 model User {
-  id        Int        @id @default(autoincrement())
+  id        String     @id @default(uuid())
   name      String
   email     String     @unique
-  password  String
-  type      String // Owner/Mechanic
+  type      String
   workshops Workshop[]
   Vehicle   Vehicle[]
 }
 
 // Vehicle entity for vehicle information
 model Vehicle {
-  id                Int       @id @default(autoincrement())
+  id                String    @id @default(uuid())
   brand             String
   model             String
   manufacturingYear Int
   plate             String
-  owner             User      @relation(fields: [ownerId], references: [id])
-  ownerId           Int
+  ownerId           String
   servicesPerformed Service[]
+  fipeId            String
+
+  owner User @relation(fields: [ownerId], references: [id])
 }
 
 // Service entity for services to be performed
 model Service {
-  id                 Int           @id @default(autoincrement())
+  id                 String         @id @default(uuid())
   serviceName        String
   serviceDescription String
-  serviceValue       Float
-  completionDeadline DateTime
-  serviceStatus      ServiceStatus // Enum for service status
-  vehicle            Vehicle       @relation(fields: [vehicleId], references: [id])
-  vehicleId          Int
+  serviceValue       Float?
+  realizedDate       DateTime
+  completionDeadline DateTime?
+  serviceStatus      ServiceStatus? // Enum for service status
+  vehicleId          String
+
+  vehicle      Vehicle       @relation(fields: [vehicleId], references: [id])
+  partsChanged PartChanged[] @relation("PartsChangedByService")
 }
 
 // Part entity for part information
 model Part {
-  id              Int    @id @default(autoincrement())
+  id              String @id @default(uuid())
   partName        String
   partDescription String
   partValue       Float
   stockQuantity   Int
 }
 
+model PartChanged {
+  id              String   @id @default(uuid())
+  partName        String
+  partDescription String
+  partValue       Float?
+  manufacturer    String
+  service         Service? @relation("PartsChangedByService", fields: [serviceId], references: [id])
+  serviceId       String?
+}
+
 // Workshop entity for workshop information
 model Workshop {
-  id           Int        @id @default(autoincrement())
+  id           String     @id @default(uuid())
   workshopName String
   address      String
   phone        String
-  owner        User       @relation(fields: [ownerId], references: [id])
-  ownerId      Int
+  ownerId      String
   mechanics    Mechanic[]
+
+  owner User @relation(fields: [ownerId], references: [id])
 }
 
 // Mechanic entity for mechanic information
 model Mechanic {
-  id           Int       @id @default(autoincrement())
+  id           String    @id @default(uuid())
   mechanicName String
   specialty    Specialty // Enum for mechanic specialty
   email        String
   phone        String
-  workshop     Workshop  @relation(fields: [workshopId], references: [id])
-  workshopId   Int
+  workshopId   String
+
+  workshop Workshop @relation(fields: [workshopId], references: [id])
 }

@@ -1,18 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import {
+  CreateVehicleDto,
   GetVehiclesDto,
   ReturnBrandsDto,
   ReturnVehiclesDto,
 } from './dto/vehicle.dto';
 import { FipeService } from '@shared/fipe.service';
 import { AxiosInstance } from 'axios';
+import { PrismaService } from '@shared/prisma.service';
 
 @Injectable()
 export class VehicleService {
   private fipeInstance: AxiosInstance;
 
-  constructor(private fipeService: FipeService) {
-    this.fipeInstance = fipeService.getAxiosInstance();
+  constructor(
+    private fipeService: FipeService,
+    private readonly prismaService: PrismaService,
+  ) {
+    this.fipeInstance = this.fipeService.getAxiosInstance();
   }
 
   async getBrands(): Promise<ReturnBrandsDto[]> {
@@ -67,5 +72,63 @@ export class VehicleService {
         name: model.Label,
       })),
     };
+  }
+
+  async getVehiclesModels(dataGet: GetVehiclesDto) {
+    const {
+      data,
+    }: {
+      data: { Label: string; Value: string }[];
+    } = await this.fipeInstance.post('veiculos/ConsultarAnoModelo', {
+      codigoTipoVeiculo: 1,
+      codigoTabelaReferencia: 309,
+      codigoModelo: dataGet.modelCode,
+      codigoMarca: dataGet.brandCode,
+      ano: dataGet.year,
+      codigoTipoCombustivel: dataGet.fuelTypeCode,
+      anoModelo: dataGet.modelYear,
+      modeloCodigoExterno: dataGet.externalModelCode,
+    });
+
+    return data;
+  }
+
+  async newVehicle(data: CreateVehicleDto) {
+    return await this.prismaService.vehicle.create({
+      data,
+    });
+  }
+
+  async getVehicle(id: string) {
+    return await this.prismaService.vehicle.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
+
+  async getVehiclesByOwner(ownerId: string) {
+    return await this.prismaService.vehicle.findMany({
+      where: {
+        ownerId,
+      },
+    });
+  }
+
+  async updateVehicle(id: string, data: Partial<CreateVehicleDto>) {
+    return await this.prismaService.vehicle.update({
+      where: {
+        id: id,
+      },
+      data,
+    });
+  }
+
+  async deleteVehicle(id: string) {
+    return await this.prismaService.vehicle.delete({
+      where: {
+        id,
+      },
+    });
   }
 }
